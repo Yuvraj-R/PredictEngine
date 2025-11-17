@@ -1,0 +1,6 @@
+flask
+psycopg2-binary        # Postgres driver
+SQLAlchemy             # ORM / DB layer
+python-dotenv          # for config/env vars
+requests               # for Kalshi API calls
+nba_api                # for NBA game data
