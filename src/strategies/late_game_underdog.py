@@ -38,6 +38,7 @@ class LateGameUnderdogStrategy(Strategy):
         if (
             time_remaining < 10.0
             and score_diff <= 6
+            and implied_win_prob > 0.0
             and implied_win_prob < 0.25
             and current_risk == 0.0
         ):
