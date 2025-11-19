@@ -3,10 +3,14 @@ import pandas as pd
 from pathlib import Path
 
 
-def build_games_index_2024_25() -> pd.DataFrame:
+def build_games_index(season: str) -> pd.DataFrame:
+    """
+    Build a games index for a given season string, e.g. '2024-25', '2025-26'.
+    One row per game, with home/away team abbreviations.
+    """
     game_finder = LeagueGameFinder(
         league_id_nullable="00",
-        season_nullable="2024-25",
+        season_nullable=season,
         season_type_nullable="Regular Season",
     )
 
@@ -31,22 +35,28 @@ def build_games_index_2024_25() -> pd.DataFrame:
     return games_index
 
 
-def main():
-    games_index = build_games_index_2024_25()
+def save_games_index(season: str, filename: str) -> None:
+    games_index = build_games_index(season)
 
-    # Print a small preview (sanity check)
-    print("Preview:")
+    print(f"\n=== Season {season} preview ===")
     print(games_index.head())
     print("\nTOTAL GAMES:", len(games_index))
 
-    # Ensure directory exists
     out_dir = Path("src/data/nba")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    out_path = out_dir / "games_index_2024_25.csv"
+    out_path = out_dir / filename
     games_index.to_csv(out_path, index=False)
 
-    print(f"\nSaved to: {out_path.resolve()}")
+    print(f"Saved to: {out_path.resolve()}")
+
+
+def main():
+    # 2024–25 full season
+    save_games_index("2024-25", "games_index_2024_25.csv")
+
+    # 2025–26 season so far
+    save_games_index("2025-26", "games_index_2025_26.csv")
 
 
 if __name__ == "__main__":
