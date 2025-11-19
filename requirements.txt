@@ -5,3 +5,4 @@ python-dotenv          # for config/env vars
 requests               # for Kalshi API calls
 nba_api                # for NBA game data
 kalshi-python==2.1.4
+cryptography           # Required by kalshi-python for authentication
