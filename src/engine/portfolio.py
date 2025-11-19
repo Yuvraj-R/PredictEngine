@@ -8,11 +8,34 @@ class PortfolioState:
         self.positions: Dict[str, Position] = {}
         self.trade_log: List[Trade] = []
 
-    def get_portfolio_view(self) -> Dict[str, float]:
+    def get_portfolio_view(self, equity: float) -> Dict[str, any]:
         """
-        Returns strategy-facing dict: {market_id: dollars_at_risk}
+        Returns strategy-facing snapshot.
+        {
+            "cash": float,
+            "equity": float,
+            "positions": {
+                market_id: {
+                    "dollars_at_risk": float,
+                    "contracts": float,
+                    "entry_price": float,
+                },
+                ...
+            },
+        }
         """
-        view = {}
+        positions_view: Dict[str, Dict[str, float]] = {}
+
         for mid, pos in self.positions.items():
-            view[mid] = pos.contracts * pos.entry_price
-        return view
+            dollars_at_risk = pos.contracts * pos.entry_price
+            positions_view[mid] = {
+                "dollars_at_risk": dollars_at_risk,
+                "contracts": pos.contracts,
+                "entry_price": pos.entry_price,
+            }
+
+        return {
+            "cash": self.cash,
+            "equity": equity,
+            "positions": positions_view,
+        }
