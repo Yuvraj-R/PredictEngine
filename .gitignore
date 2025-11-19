@@ -1,1 +1,5 @@
-__pycache__
+src/data/nba/game_states/2024_25/*
+src/data/nba/game_states/2025_26/*
+__pycache__/
+*.pyc
+.DS_Store
