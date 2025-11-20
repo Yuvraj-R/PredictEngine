@@ -3,15 +3,12 @@
 from pathlib import Path
 import pandas as pd
 
-
 EVENTS_INDEX_PATH = Path("src/data/kalshi/kalshi_events_index.csv")
 
 
 def load_events_index() -> pd.DataFrame:
     df = pd.read_csv(EVENTS_INDEX_PATH)
-    # Ensure event_date is string ISO date
-    if "event_date" in df.columns:
-        df["event_date"] = df["event_date"].astype("string")
+    df["event_date"] = df["event_date"].astype("string")
     return df
 
 
@@ -30,7 +27,6 @@ def map_season(
     print(f"NBA games ({season_label}): {len(nba)}")
     print(f"Total Kalshi events: {len(events_df)}")
 
-    # Inner join on (date, home, away)
     merged = nba.merge(
         events_df,
         left_on=["GAME_DATE", "HOME_TEAM_ABBREV", "AWAY_TEAM_ABBREV"],
@@ -45,6 +41,7 @@ def map_season(
         "GAME_DATE",
         "HOME_TEAM_ABBREV",
         "AWAY_TEAM_ABBREV",
+        "SEASON_TYPE",
         "event_ticker",
         "title",
         "sub_title",
@@ -55,27 +52,26 @@ def map_season(
     merged[cols_to_keep].to_csv(out_map_path, index=False)
     print(f"Wrote mapping to: {out_map_path.resolve()}")
 
-    # Optional: log NBA games without a Kalshi event
     unmatched = nba[~nba["GAME_ID"].isin(merged["GAME_ID"])]
-    unmatched.to_csv(out_unmatched_path, index=False)
+    # unmatched.to_csv(out_unmatched_path, index=False)
     print(f"NBA games without Kalshi coverage: {len(unmatched)}")
-    print(f"Wrote unmatched list to: {out_unmatched_path.resolve()}")
+    # print(f"Wrote unmatched list to: {out_unmatched_path.resolve()}")
 
 
 def main():
     events_df = load_events_index()
 
-    # 2024–25 season
-    # map_season(
-    #     season_label="2024_25",
-    #     nba_index_path=Path("src/data/nba/games_index_2024_25.csv"),
-    #     events_df=events_df,
-    #     out_map_path=Path("src/data/merged/nba_kalshi_game_map_2024_25.csv"),
-    #     out_unmatched_path=Path(
-    #         "src/data/merged/nba_without_kalshi_2024_25.csv"),
-    # )
+    # 2024–25: full season (reg + playoffs) — *mapping*, not filtered index
+    map_season(
+        season_label="2024_25",
+        nba_index_path=Path("src/data/nba/games_index_2024_25.csv"),
+        events_df=events_df,
+        out_map_path=Path("src/data/merged/nba_kalshi_game_map_2024_25.csv"),
+        out_unmatched_path=Path(
+            "src/data/merged/nba_without_kalshi_2024_25.csv"),
+    )
 
-    # 2025–26 season
+    # 2025–26: regular season mapping
     map_season(
         season_label="2025_26",
         nba_index_path=Path("src/data/nba/games_index_2025_26.csv"),
