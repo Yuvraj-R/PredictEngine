@@ -41,9 +41,9 @@ class LateGameUnderdogStrategy(Strategy):
         stake = 100.0  # fixed v1 sizing
 
         if (
-            time_remaining < 10.0
+            time_remaining < 5.0
             and score_diff <= 6
-            and 0.0 < implied_win_prob < 0.25
+            and 0.0 < implied_win_prob < 0.15
             and current_risk == 0.0
         ):
             intents.append(
