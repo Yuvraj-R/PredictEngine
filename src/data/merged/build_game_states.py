@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 
 import argparse
 import json
@@ -136,37 +137,114 @@ def align_candles_to_timeline(
 # Market Entry Builder
 # =====================================================================
 
+
 def build_market_entry(
-    candle_row: pd.Series,
     market_ticker: str,
+    candles_df: pd.DataFrame,
+    ts: pd.Timestamp,
     home_team: str,
-    away_team: str
-) -> Dict[str, Any]:
+    away_team: str,
+) -> dict[str, Any] | None:
+    """
+    For a given timestamp ts and market_ticker, return a single market dict.
 
-    suffix = market_ticker.split("-")[-1]  # e.g. "LAL", "GSW"
-    team = suffix
-    side = "home" if team == home_team else "away"
+    - Uses the last candle with end_period_iso <= ts.
+    - Normalizes prices to [0, 1].
+    - Canonical 'price' is:
+        1) price_close / 100, or
+        2) price_mean / 100, or
+        3) mid(yes_bid_close, yes_ask_close) / 100, or
+        4) yes_bid_close/100 or yes_ask_close/100 as last resort.
+    """
 
-    price = normalize_price(candle_row.get("price_close"))
-    yes_bid = normalize_price(candle_row.get("yes_bid_close"))
-    yes_ask = normalize_price(candle_row.get("yes_ask_close"))
+    if candles_df.empty:
+        return None
+
+    # Make sure the candles are sorted by time
+    candles_sorted = candles_df.sort_values("end_period_iso")
+
+    # Take last candle whose end_period_iso <= ts
+    mask = candles_sorted["end_period_iso"] <= ts
+    sub = candles_sorted.loc[mask]
+    if sub.empty:
+        return None
+
+    row = sub.iloc[-1]
+
+    def safe_float(x):
+        if x is None:
+            return None
+        if isinstance(x, (int, float)):
+            if isinstance(x, float) and math.isnan(x):
+                return None
+            return float(x)
+        try:
+            v = float(x)
+            if math.isnan(v):
+                return None
+            return v
+        except Exception:
+            return None
+
+    # Raw values from candles (in cents/probability points)
+    yes_bid_close_raw = safe_float(row.get("yes_bid_close"))
+    yes_ask_close_raw = safe_float(row.get("yes_ask_close"))
+    price_close_raw = safe_float(row.get("price_close"))
+    price_mean_raw = safe_float(row.get("price_mean"))
+
+    # Normalize to [0, 1]
+    yes_bid_prob = yes_bid_close_raw / 100.0 if yes_bid_close_raw is not None else None
+    yes_ask_prob = yes_ask_close_raw / 100.0 if yes_ask_close_raw is not None else None
+    price_close = price_close_raw / 100.0 if price_close_raw is not None else None
+    price_mean = price_mean_raw / 100.0 if price_mean_raw is not None else None
+
+    # Canonical price selection:
+    # 1) trade close, 2) trade mean, 3) mid of bid/ask, 4) single side
+    price = None
+    if price_close is not None:
+        price = price_close
+    elif price_mean is not None:
+        price = price_mean
+    else:
+        if yes_bid_prob is not None and yes_ask_prob is not None:
+            price = 0.5 * (yes_bid_prob + yes_ask_prob)
+        elif yes_bid_prob is not None:
+            price = yes_bid_prob
+        elif yes_ask_prob is not None:
+            price = yes_ask_prob
+        else:
+            price = None  # truly no information for this timestamp
+
+    # Bid/ask spread in probability space
     spread = None
+    if yes_bid_prob is not None and yes_ask_prob is not None:
+        spread = abs(yes_ask_prob - yes_bid_prob)
 
-    if yes_bid is not None and yes_ask is not None:
-        spread = abs(yes_ask - yes_bid)
+    volume = safe_float(row.get("volume"))
+    open_interest = safe_float(row.get("open_interest"))
+
+    # Team code is the suffix of the ticker after the last '-'
+    #   e.g. KXNBAGAME-25OCT21HOUOKC-OKC -> OKC
+    team_code = market_ticker.split("-")[-1]
+    if team_code == home_team:
+        side = "home"
+    elif team_code == away_team:
+        side = "away"
+    else:
+        side = None  # shouldn't really happen for our mapping
 
     entry = {
         "market_id": market_ticker,
         "type": "moneyline",
-        "team": team,
+        "team": team_code,
         "side": side,
         "line": None,
         "price": price,
-        "yes_bid_prob": yes_bid,
-        "yes_ask_prob": yes_ask,
+        "yes_bid_prob": yes_bid_prob,
+        "yes_ask_prob": yes_ask_prob,
         "bid_ask_spread": spread,
-        "volume": candle_row.get("volume"),
-        "open_interest": candle_row.get("open_interest"),
+        "volume": volume,
+        "open_interest": open_interest,
         "open_time": None,
         "close_time": None,
         "expiration_time": None,
@@ -177,6 +255,7 @@ def build_market_entry(
         "rules_primary": None,
     }
 
+    # Let to_native handle scalars/lists/dicts as before
     return to_native(entry)
 
 
@@ -199,27 +278,32 @@ def build_states_for_game(
     # --- Load timeline ---
     timeline = load_nba_timeline(season, game_id)
 
-    # --- Load & align candlesticks ---
-    aligned_by_ticker = {}
+    # --- Load candles per market ticker ---
+    candles_by_ticker: Dict[str, pd.DataFrame] = {}
     for ticker in market_tickers:
         df = load_market_tick_data(ticker)
-        aligned_by_ticker[ticker] = align_candles_to_timeline(timeline, df)
+        candles_by_ticker[ticker] = df
 
     # --- Build final states list ---
-    states = []
+    states: List[Dict[str, Any]] = []
 
-    for idx, row in timeline.iterrows():
+    for _, row in timeline.iterrows():
         timestamp = row["timestamp"]
 
-        markets_list = []
+        markets_list: List[Dict[str, Any]] = []
         for ticker in market_tickers:
-            cand = aligned_by_ticker[ticker][idx]
-            if cand is None:
-                continue
+            df = candles_by_ticker[ticker]
 
-            markets_list.append(
-                build_market_entry(cand, ticker, home_team, away_team)
+            entry = build_market_entry(
+                market_ticker=ticker,
+                candles_df=df,
+                ts=timestamp,
+                home_team=home_team,
+                away_team=away_team,
             )
+
+            if entry is not None:
+                markets_list.append(entry)
 
         state = {
             "timestamp": timestamp,
@@ -231,7 +315,9 @@ def build_states_for_game(
             "score_diff": row.get("score_diff"),
             "quarter": row.get("quarter"),
             "time_remaining_minutes": row.get("time_remaining_minutes"),
-            "time_remaining_quarter_seconds": row.get("time_remaining_quarter_seconds"),
+            "time_remaining_quarter_seconds": row.get(
+                "time_remaining_quarter_seconds"
+            ),
             "markets": markets_list,
         }
 
