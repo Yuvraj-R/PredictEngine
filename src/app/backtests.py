@@ -70,18 +70,47 @@ def _save_backtest_run(
 
     # 4) equity_curve.csv
     equity_path = run_dir / "equity_curve.csv"
+    equity_curve_min = _downsample_equity_curve_to_minutes(result.equity_curve)
+
     with open(equity_path, "w", newline="") as f:
-        if result.equity_curve:
-            # ["timestamp", "equity"]
-            fieldnames = list(result.equity_curve[0].keys())
+        if equity_curve_min:
+            fieldnames = list(equity_curve_min[0].keys())
         else:
             fieldnames = ["timestamp", "equity"]
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        for row in result.equity_curve:
+        for row in equity_curve_min:
             writer.writerow(row)
 
     return run_id
+
+
+def _downsample_equity_curve_to_minutes(equity_curve):
+    """
+    Collapse equity_curve to one row per minute (last seen in that minute).
+    """
+    by_minute = {}
+
+    for row in equity_curve:
+        ts = row.get("timestamp")
+        if not ts:
+            continue
+        try:
+            # handle both ...+00:00 and ...Z
+            if ts.endswith("Z"):
+                ts_dt = dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            else:
+                ts_dt = dt.datetime.fromisoformat(ts)
+        except Exception:
+            continue
+
+        key = ts_dt.replace(second=0, microsecond=0)
+        # keep the last seen row in that minute
+        r = dict(row)
+        r["timestamp"] = key.isoformat()
+        by_minute[key] = r
+
+    return [by_minute[k] for k in sorted(by_minute.keys())]
 
 
 @bp.route("/backtests", methods=["POST"])

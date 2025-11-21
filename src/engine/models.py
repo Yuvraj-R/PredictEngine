@@ -5,6 +5,8 @@ from typing import List, Dict, Optional
 @dataclass
 class Position:
     market_id: str
+    game_id: str
+    team: str
     contracts: float
     entry_price: float
     open_fee: float
