@@ -16,18 +16,25 @@ import datetime as dt
 
 def to_native(x):
     """
-    Convert any numpy / pandas scalar to a JSON-safe Python type.
-    Also converts NaN/NA to None.
+    Convert numpy/pandas scalars to JSON-safe Python types.
+    Recursively handles lists and dicts.
     """
 
-    # None stays None
+    # Preserve None
     if x is None:
         return None
 
-    # Handle pandas NA or numpy NaN
+    # Recurse for lists
+    if isinstance(x, list):
+        return [to_native(v) for v in x]
+
+    # Recurse for dicts
+    if isinstance(x, dict):
+        return {k: to_native(v) for k, v in x.items()}
+
+    # Simple pandas/numpy NaN → None (only for scalars)
     try:
-        # If it's nan-like, return None
-        if pd.isna(x):
+        if isinstance(x, (float, int)) and pd.isna(x):
             return None
     except Exception:
         pass
@@ -43,15 +50,15 @@ def to_native(x):
     if isinstance(x, (np.bool_)):
         return bool(x)
 
+    # timestamps → ISO string
+    if isinstance(x, (pd.Timestamp, dt.datetime)):
+        return x.isoformat()
+
     # Python native types stay as-is
     if isinstance(x, (int, float, str, bool)):
         return x
 
-    # Timestamps → ISO string
-    if isinstance(x, (pd.Timestamp, dt.datetime)):
-        return x.isoformat()
-
-    # Anything else → convert via str (rare fallback)
+    # Fallback: string, but this should rarely hit now
     return str(x)
 
 
@@ -170,8 +177,7 @@ def build_market_entry(
         "rules_primary": None,
     }
 
-    # Convert ANY numpy/pandas types to JSON-safe Python types
-    return {k: to_native(v) for k, v in entry.items()}
+    return to_native(entry)
 
 
 # =====================================================================
@@ -229,9 +235,7 @@ def build_states_for_game(
             "markets": markets_list,
         }
 
-        # Convert entire state to JSON-safe types
-        state = {k: to_native(v) for k, v in state.items()}
-
+        state = to_native(state)
         states.append(state)
 
     # --- Save ---
