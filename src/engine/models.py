@@ -7,6 +7,7 @@ class Position:
     market_id: str
     contracts: float
     entry_price: float
+    open_fee: float
 
 
 @dataclass

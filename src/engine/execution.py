@@ -1,3 +1,4 @@
+import math
 from .models import Position, Trade
 from .portfolio import PortfolioState
 
@@ -34,13 +35,33 @@ def auto_settle(state, portfolio: PortfolioState):
 # Internal helpers
 # -------------------------
 
+def _calc_fee(contracts: float, price: float, fee_rate: float = 0.07) -> float:
+    """
+    Kalshi taker fee:
+      fee = round_up( fee_rate * C * P * (1 - P) )
+    where P is 0–1 in our engine.
+    """
+    if contracts <= 0 or price is None or price <= 0 or price >= 1:
+        return 0.0
+
+    raw = fee_rate * contracts * price * (1.0 - price)
+    # round up to next cent
+    return math.ceil(raw * 100.0) / 100.0
+
+
 def _open_position(intent, price, state, portfolio: PortfolioState):
     size = intent.position_size
-    contracts = size / price
+    if price is None or price <= 0:
+        return
 
-    pos = Position(intent.market_id, contracts, price)
+    contracts = size / price
+    open_fee = _calc_fee(contracts, price)
+
+    pos = Position(intent.market_id, contracts, price, open_fee)
     portfolio.positions[intent.market_id] = pos
-    portfolio.cash -= size
+
+    # pay cost + opening fee
+    portfolio.cash -= (size + open_fee)
 
     portfolio.trade_log.append(
         Trade(
@@ -49,21 +70,24 @@ def _open_position(intent, price, state, portfolio: PortfolioState):
             action="open",
             price=price,
             contracts=contracts,
-            pnl=0.0,
+            pnl=0.0,  # PnL realized at close; fee handled via cash + close PnL
         )
     )
 
 
 def _close_position(market_id, price, state, portfolio: PortfolioState, auto=False):
     pos = portfolio.positions.get(market_id)
-    if not pos:
+    if not pos or price is None:
         return
 
-    proceeds = pos.contracts * price
-    pnl = pos.contracts * (price - pos.entry_price)
+    close_fee = _calc_fee(pos.contracts, price)
 
-    portfolio.cash += proceeds
+    proceeds = pos.contracts * price
+    portfolio.cash += (proceeds - close_fee)
     del portfolio.positions[market_id]
+
+    # round-trip PnL including both open + close fees
+    pnl = pos.contracts * (price - pos.entry_price) - pos.open_fee - close_fee
 
     portfolio.trade_log.append(
         Trade(
