@@ -14,7 +14,7 @@ class LateGameUnderdogStrategy(Strategy):
     def __init__(self, params: Dict[str, Any] | None = None):
         super().__init__(params)
         self.max_price: float = self.params.get("max_price", 0.15)
-        self.stake: float = self.params.get("stake", 100.0)
+        self.stake: float = self.params.get("stake", 25.0)
 
     # -------------------------
     # Internal helpers
@@ -46,9 +46,14 @@ class LateGameUnderdogStrategy(Strategy):
     ) -> List[TradeIntent]:
         intents: List[TradeIntent] = []
 
+        quarter: int = state["quarter"]
         time_remaining: float = state["time_remaining_minutes"]
         score_diff: float = state["score_diff"]
         markets = state.get("markets") or []
+
+        # Only trade in Q4 or later (OT) and last 5 minutes of that period
+        if not (quarter >= 4 and 0.5 < time_remaining < 5.0):
+            return intents
 
         # moneyline winner markets only, with usable execution price
         candidates: List[Dict[str, Any]] = []
@@ -76,10 +81,9 @@ class LateGameUnderdogStrategy(Strategy):
         current_risk = pos_info["dollars_at_risk"] if pos_info else 0.0
 
         if (
-            time_remaining < 5.0
-            and score_diff <= 6
-            and 0.0 < implied_win_prob < self.max_price
-            and current_risk == 0.0
+            score_diff <= 6
+            and 0.01 < implied_win_prob < self.max_price
+            and current_risk == 0.0  # max 1 open per market
         ):
             intents.append(
                 TradeIntent(
