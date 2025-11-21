@@ -1,6 +1,7 @@
 src/data/nba/game_states/2024_25/*
 src/data/nba/game_states/2025_26/*
 src/data/kalshi/candles/*
+src/data/merged/states/*
 __pycache__/
 *.pyc
 .DS_Store
