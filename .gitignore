@@ -3,6 +3,8 @@ src/data/nba/game_states/2025_26/*
 src/data/kalshi/candles/*
 src/data/merged/states/*
 src/data/backtest_runs/*
+src/scraper/data/*
+src/scraper/jobs/*
 __pycache__/
 *.pyc
 .DS_Store
