@@ -286,7 +286,6 @@ def discover_jobs_for_date(target_date: date) -> List[Job]:
     nba_games = _fetch_nba_games_for_date(target_date)
     events = _fetch_kalshi_events()
     events_index = _index_kalshi_events_for_date(events, target_date)
-    print(events_index)  # keep for now; remove later if too noisy
 
     jobs: List[Job] = []
 
