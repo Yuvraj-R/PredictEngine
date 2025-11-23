@@ -36,6 +36,7 @@ API_KEY_ID = os.getenv("KALSHI_API_KEY_ID")
 PRIVATE_KEY_PATH = PROJECT_ROOT / "kalshi_private_key.pem"
 
 PREGAME_MINUTES_DEFAULT = 10  # how long before tipoff to start streaming
+INACTIVITY_RECONNECT_SECS = 90.0
 
 
 # ---------------------------------------------------------------------------
@@ -172,12 +173,30 @@ async def _run_ws_for_job(job: Job, pregame_minutes: int):
                     }
                     await ws.send(json.dumps(sub_msg))
 
+                    # track last time we saw ANY ticker message
+                    last_ticker_ts = datetime.now(timezone.utc)
+
                     while True:
+                        # bail out if we hit end-of-game window (if you keep end_at logic)
+                        # if end_at and datetime.now(timezone.utc) >= end_at:
+                        #     print(f"[game_worker] End window reached while streaming {job.event_ticker}; closing WS.")
+                        #     return
+
                         try:
                             raw = await asyncio.wait_for(ws.recv(), timeout=30.0)
                         except asyncio.TimeoutError:
-                            # keep connection alive by just looping again
-                            continue
+                            # no message in 30s; if we haven't seen *any* ticker in a while, reconnect
+                            idle = (datetime.now(timezone.utc) -
+                                    last_ticker_ts).total_seconds()
+                            if idle > INACTIVITY_RECONNECT_SECS:
+                                print(
+                                    f"[game_worker] No ticker msgs for {job.event_ticker} in "
+                                    f"{idle:.0f}s; forcing WS reconnect."
+                                )
+                                # break out of inner loop → outer loop will reconnect
+                                break
+                            else:
+                                continue
 
                         try:
                             msg = json.loads(raw)
@@ -190,6 +209,8 @@ async def _run_ws_for_job(job: Job, pregame_minutes: int):
                         if msg_type != "ticker":
                             continue
 
+                        last_ticker_ts = datetime.now(timezone.utc)
+
                         payload = msg.get("msg") or {}
                         mkt = payload.get("market_ticker")
                         if not mkt or mkt not in writers:
@@ -198,8 +219,7 @@ async def _run_ws_for_job(job: Job, pregame_minutes: int):
                         kalshi_ts = payload.get("ts")  # seconds since epoch
                         if isinstance(kalshi_ts, (int, float)):
                             ts_iso = datetime.fromtimestamp(
-                                kalshi_ts, tz=timezone.utc
-                            ).isoformat()
+                                kalshi_ts, tz=timezone.utc).isoformat()
                         else:
                             ts_iso = datetime.now(timezone.utc).isoformat()
 
