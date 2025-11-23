@@ -73,14 +73,14 @@ def save_games_index(season: str, filename: str) -> None:
 
 
 def main():
-    out_2425 = Path("src/data/nba/games_index_2024_25.csv")
+    # out_2425 = Path("src/data/nba/games_index_2024_25.csv")
     out_2526 = Path("src/data/nba/games_index_2025_26.csv")
 
-    # 2024–25: Regular Season + Playoffs
-    games_2425 = build_games_index("2024-25", ["Regular Season", "Playoffs"])
-    out_2425.parent.mkdir(parents=True, exist_ok=True)
-    games_2425.to_csv(out_2425, index=False)
-    print(f"2024-25 games (reg + playoffs): {len(games_2425)} -> {out_2425}")
+    # # 2024–25: Regular Season + Playoffs
+    # games_2425 = build_games_index("2024-25", ["Regular Season", "Playoffs"])
+    # out_2425.parent.mkdir(parents=True, exist_ok=True)
+    # games_2425.to_csv(out_2425, index=False)
+    # print(f"2024-25 games (reg + playoffs): {len(games_2425)} -> {out_2425}")
 
     # 2025–26: only Regular Season for now
     games_2526 = build_games_index("2025-26", ["Regular Season"])
