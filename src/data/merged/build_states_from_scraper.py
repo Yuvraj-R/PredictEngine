@@ -14,7 +14,7 @@ import pandas as pd
 # Paths
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]  # .../PredictEngine
+PROJECT_ROOT = Path(__file__).resolve().parents[3]  # .../PredictEngine
 SCRAPER_DATA_ROOT = PROJECT_ROOT / "src" / "scraper" / "data"
 SCRAPER_JOBS_DIR = PROJECT_ROOT / "src" / "scraper" / "jobs"
 NBA_GAME_STATES_ROOT = PROJECT_ROOT / "src" / "data" / "nba" / "game_states"
