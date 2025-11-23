@@ -6,6 +6,7 @@ import base64
 import json
 import os
 import time
+import requests
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -32,6 +33,7 @@ DATA_DIR = SCRAPER_DIR / "data"
 load_dotenv(PROJECT_ROOT / ".env")
 
 WS_URL = "wss://api.elections.kalshi.com/trade-api/ws/v2"
+REST_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 API_KEY_ID = os.getenv("KALSHI_API_KEY_ID")
 PRIVATE_KEY_PATH = PROJECT_ROOT / "kalshi_private_key.pem"
 
@@ -120,10 +122,42 @@ def _compute_start_time(job: Job, pregame_minutes: int) -> Optional[datetime]:
     return tipoff - timedelta(minutes=pregame_minutes)
 
 
+def _fetch_market_status_rest(market_ticker: str) -> Optional[str]:
+    """
+    Hit GET /markets/{ticker} and return lowercase status, e.g. 'open', 'finalized'.
+    """
+    url = f"{REST_BASE_URL}/markets/{market_ticker}"
+    try:
+        resp = requests.get(url, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        m = data.get("market") or {}
+        status = m.get("status")
+        if isinstance(status, str):
+            return status.lower()
+        return None
+    except Exception as e:
+        print(
+            f"[game_worker] REST status check error for {market_ticker}: {e!r}")
+        return None
+
+
+def _all_markets_terminal_rest(market_tickers: List[str]) -> bool:
+    """
+    Return True if *every* market ticker is in a terminal status
+    according to the REST /markets/{ticker} endpoint.
+    """
+    all_terminal = True
+    for t in market_tickers:
+        status = _fetch_market_status_rest(t) or ""
+        if status not in TERMINAL_STATUSES:
+            all_terminal = False
+    return all_terminal
+
+
 # ---------------------------------------------------------------------------
 # Core WS loop
 # ---------------------------------------------------------------------------
-
 TERMINAL_STATUSES = {"finalized", "inactive", "settled", "closed"}
 
 
@@ -155,6 +189,12 @@ async def _run_ws_for_job(job: Job, pregame_minutes: int):
         latest_status: Dict[str, str] = {}
 
         while True:
+            if _all_markets_terminal_rest(job.market_tickers):
+                print(
+                    f"[game_worker] All markets terminal (REST) for "
+                    f"{job.event_ticker}; exiting worker."
+                )
+                return
             headers = _create_ws_headers(private_key)
             try:
                 async with websockets.connect(WS_URL, additional_headers=headers) as ws:
