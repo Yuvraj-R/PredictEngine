@@ -80,36 +80,19 @@ def main() -> None:
             sys.executable,
             "-m",
             "src.scraper.game_worker",
-            "--date",
-            args.date,
-            "--event-ticker",
-            event_ticker,
-            "--pregame-minutes",
-            str(args.pregame_minutes),
+            "--date", args.date,
+            "--event-ticker", event_ticker,
+            "--pregame-minutes", str(args.pregame_minutes),
         ]
+
         print(f"[orchestrator] Starting worker for {event_ticker}")
-        p = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT))
-        procs.append(p)
+        subprocess.Popen(
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            start_new_session=True
+        )
 
-        # simple cap: don't exceed max_workers at once
-        if len(procs) >= args.max_workers:
-            # wait for at least one to exit
-            finished = False
-            while not finished:
-                for proc in list(procs):
-                    ret = proc.poll()
-                    if ret is not None:
-                        print(f"[orchestrator] Worker exited with code {ret}")
-                        procs.remove(proc)
-                        finished = True
-                        break
-
-    # wait for remaining workers
-    for p in procs:
-        p.wait()
-        print(f"[orchestrator] Worker exited with code {p.returncode}")
-
-    print("[orchestrator] All workers done.")
+    print("[orchestrator] All workers launched (detached). Exiting.")
 
 
 if __name__ == "__main__":
