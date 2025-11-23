@@ -55,8 +55,8 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--max-workers",
         type=int,
-        default=16,
-        help="Max concurrent workers (soft cap; simple batching).",
+        default=64,  # soft cap; NBA slate is small, this is effectively "unlimited"
+        help="Max concurrent workers (soft cap; currently not strictly enforced).",
     )
     return p.parse_args()
 
@@ -72,27 +72,36 @@ def main() -> None:
 
     print(f"[orchestrator] Launching {len(jobs)} workers for {args.date}")
 
-    procs: List[subprocess.Popen] = []
+    procs: List[tuple[str, subprocess.Popen]] = []
 
+    # Start one game_worker per job
     for j in jobs:
         event_ticker = j["event_ticker"]
         cmd = [
             sys.executable,
             "-m",
             "src.scraper.game_worker",
-            "--date", args.date,
-            "--event-ticker", event_ticker,
-            "--pregame-minutes", str(args.pregame_minutes),
+            "--date",
+            args.date,
+            "--event-ticker",
+            event_ticker,
+            "--pregame-minutes",
+            str(args.pregame_minutes),
         ]
 
         print(f"[orchestrator] Starting worker for {event_ticker}")
-        subprocess.Popen(
+        p = subprocess.Popen(
             cmd,
             cwd=str(PROJECT_ROOT),
-            start_new_session=True
         )
+        procs.append((event_ticker, p))
 
-    print("[orchestrator] All workers launched (detached). Exiting.")
+    # Wait for all workers to finish
+    for event_ticker, p in procs:
+        ret = p.wait()
+        print(f"[orchestrator] Worker {event_ticker} exited with code {ret}")
+
+    print("[orchestrator] All workers done.")
 
 
 if __name__ == "__main__":
