@@ -3,7 +3,7 @@ from .portfolio import PortfolioState
 from .execution import apply_intent, auto_settle
 from .metrics import compute_metrics
 from .models import BacktestResult
-from src.data.kalshi.merged.load_states import load_states_for_config
+from data.kalshi.merged.load_states import load_states_for_config
 
 
 def run_backtest(strategy, config: Dict[str, Any]) -> BacktestResult:
