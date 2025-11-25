@@ -8,11 +8,19 @@ import csv
 from flask import Blueprint, request, jsonify
 from core.backtest import run_backtest
 from strategies.late_game_underdog import LateGameUnderdogStrategy
+from strategies.tight_game_coinflip import TightGameCoinflipStrategy
+from strategies.no_score_spike_revert import NoScoreSpikeRevertStrategy
+from strategies.micro_momentum_follow import MicroMomentumFollowStrategy
+from strategies.panic_spread_fade import PanicSpreadFadeStrategy
 
 bp = Blueprint("backtests", __name__)
 
 STRATEGY_REGISTRY = {
     "late_game_underdog": LateGameUnderdogStrategy,
+    "tight_game_coinflip": TightGameCoinflipStrategy,
+    "no_score_spike_revert": NoScoreSpikeRevertStrategy,
+    "micro_momentum_follow": MicroMomentumFollowStrategy,
+    "panic_spread_fade": PanicSpreadFadeStrategy,
 }
 
 
