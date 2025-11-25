@@ -22,12 +22,11 @@ from .discover_games import Job  # reuse Job dataclass from discover_games.py
 # Paths / basic setup
 # ---------------------------------------------------------------------------
 
-SCRAPER_DIR = Path(__file__).resolve(
-).parent                  # .../src/scraper
-PROJECT_ROOT = SCRAPER_DIR.parent.parent                       # .../PredictEngine
-JOBS_DIR = SCRAPER_DIR / "jobs"
+LIVE_DIR = Path(__file__).resolve().parent  # src/data/kalshi/live
+PROJECT_ROOT = LIVE_DIR.parent.parent.parent.parent  # .../PredictEngine
+JOBS_DIR = LIVE_DIR / "jobs"
 # where we write ticks
-DATA_DIR = SCRAPER_DIR / "data"
+DATA_DIR = LIVE_DIR / "live_data"
 
 # Load .env from project root
 load_dotenv(PROJECT_ROOT / ".env")
@@ -174,7 +173,7 @@ async def _run_ws_for_job(job: Job, pregame_minutes: int):
         )
         await asyncio.sleep(wait_secs)
 
-    # data dir: src/scraper/data/<YYYY-MM-DD>/<EVENT_TICKER>/<market>.jsonl
+    # data dir: src/data/kalshi/live/live_data/<YYYY-MM-DD>/<EVENT_TICKER>/<market>.jsonl
     out_base = DATA_DIR / job.game_date / job.event_ticker
     out_base.mkdir(parents=True, exist_ok=True)
 

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-STATES_DIR = Path("src/data/merged/states")
+STATES_DIR = Path("src/data/kalshi/merged/states")
 
 
 def _sanitize_state(obj: Any) -> Dict[str, Any] | None:

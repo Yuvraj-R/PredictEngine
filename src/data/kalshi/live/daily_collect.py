@@ -1,4 +1,3 @@
-# src/scraper/daily_collect.py
 from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -6,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def main():
@@ -15,13 +14,13 @@ def main():
 
     # 1) Discover jobs
     subprocess.check_call(
-        [sys.executable, "-m", "src.scraper.discover_games", "--date", today],
+        [sys.executable, "-m", "src.data.kalshi.live.discover_games", "--date", today],
         cwd=str(ROOT),
     )
 
     # 2) Launch workers for all jobs
     subprocess.check_call(
-        [sys.executable, "-m", "src.scraper.orchestrator", "--date", today],
+        [sys.executable, "-m", "src.data.kalshi.live.orchestrator", "--date", today],
         cwd=str(ROOT),
     )
 

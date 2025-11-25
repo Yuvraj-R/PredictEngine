@@ -14,7 +14,7 @@ from src.data.nba.fetch_nba_games import main as fetch_nba_games_main
 from src.data.nba.fetch_play_by_play import save_timeline_csv
 
 # Paths relative to project root (WorkingDirectory=/home/<user>/PredictEngine)
-JOBS_DIR = Path("src/scraper/jobs")
+JOBS_DIR = Path("src/data/kalshi/live/jobs")
 GAME_STATES_BASE = Path("src/data/nba/game_states")
 
 
@@ -117,7 +117,7 @@ def _run_build_states_from_scraper(date_str: str) -> None:
     cmd = [
         sys.executable,
         "-m",
-        "src.data.merged.build_states_from_scraper",
+        "src.data.kalshi.merged.build_states_from_scraper",
         "--date",
         date_str,
     ]

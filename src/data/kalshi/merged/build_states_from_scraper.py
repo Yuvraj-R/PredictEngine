@@ -1,4 +1,3 @@
-# src/data/merged/build_states_from_scraper.py
 from __future__ import annotations
 
 import argparse
@@ -14,11 +13,12 @@ import pandas as pd
 # Paths
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]  # .../PredictEngine
-SCRAPER_DATA_ROOT = PROJECT_ROOT / "src" / "scraper" / "data"
-SCRAPER_JOBS_DIR = PROJECT_ROOT / "src" / "scraper" / "jobs"
+PROJECT_ROOT = Path(__file__).resolve().parents[5]  # .../PredictEngine
+LIVE_DATA_ROOT = PROJECT_ROOT / "src" / "data" / "kalshi" / "live" / "live_data"
+LIVE_JOBS_DIR = PROJECT_ROOT / "src" / "data" / "kalshi" / "live" / "jobs"
 NBA_GAME_STATES_ROOT = PROJECT_ROOT / "src" / "data" / "nba" / "game_states"
-MERGED_STATES_DIR = PROJECT_ROOT / "src" / "data" / "merged" / "states"
+MERGED_STATES_DIR = PROJECT_ROOT / "src" / \
+    "data" / "kalshi" / "merged" / "states"
 
 
 TERMINAL_STATUSES = {"finalized", "inactive", "settled", "closed"}
@@ -97,7 +97,7 @@ def _load_kalshi_ticks(job: GameJob) -> pd.DataFrame:
     Expects files like:
       src/scraper/data/<YYYY-MM-DD>/<EVENT_TICKER>/<MARKET_TICKER>.jsonl
     """
-    event_dir = SCRAPER_DATA_ROOT / job.game_date / job.event_ticker
+    event_dir = LIVE_DATA_ROOT / job.game_date / job.event_ticker
     if not event_dir.exists():
         raise FileNotFoundError(f"Missing Kalshi data dir: {event_dir}")
 
@@ -311,7 +311,7 @@ def write_states_for_game(job: GameJob) -> Path:
 
 
 def _load_jobs_for_date(game_date: str) -> List[GameJob]:
-    jobs_path = SCRAPER_JOBS_DIR / f"jobs_{game_date}.json"
+    jobs_path = LIVE_JOBS_DIR / f"jobs_{game_date}.json"
     if not jobs_path.exists():
         raise FileNotFoundError(f"Jobs file not found: {jobs_path}")
 

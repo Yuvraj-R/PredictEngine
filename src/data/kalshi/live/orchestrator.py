@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-SCRAPER_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRAPER_DIR.parent.parent
-JOBS_DIR = SCRAPER_DIR / "jobs"
+LIVE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = LIVE_DIR.parent.parent.parent.parent
+JOBS_DIR = LIVE_DIR / "jobs"
 
 
 def _load_jobs(game_date: str) -> List[Dict[str, Any]]:
@@ -80,7 +80,7 @@ def main() -> None:
         cmd = [
             sys.executable,
             "-m",
-            "src.scraper.game_worker",
+            "src.data.kalshi.live.game_worker",
             "--date",
             args.date,
             "--event-ticker",

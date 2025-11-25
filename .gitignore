@@ -1,12 +1,21 @@
+# NBA game states
 src/data/nba/game_states/2024_25/*
 src/data/nba/game_states/2025_26/*
+
+# Kalshi data (raw + merged)
 src/data/kalshi/candles/*
-src/data/merged/states/*
+src/data/kalshi/merged/states/*
+src/data/kalshi/live/live_data/*
+src/data/kalshi/live/jobs/*
+
+# Backtest outputs
 src/data/backtest_runs/*
-src/scraper/data/*
-src/scraper/jobs/*
+
+# Python junk
 __pycache__/
 *.pyc
+
+# Local / secrets
 .DS_Store
 .env
 .env.*
