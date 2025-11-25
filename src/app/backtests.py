@@ -6,7 +6,7 @@ import json
 import csv
 
 from flask import Blueprint, request, jsonify
-from engine.backtest import run_backtest
+from core.backtest import run_backtest
 from strategies.late_game_underdog import LateGameUnderdogStrategy
 
 bp = Blueprint("backtests", __name__)
