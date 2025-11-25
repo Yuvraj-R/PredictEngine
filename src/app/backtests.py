@@ -12,6 +12,8 @@ from strategies.tight_game_coinflip import TightGameCoinflipStrategy
 from strategies.no_score_spike_revert import NoScoreSpikeRevertStrategy
 from strategies.micro_momentum_follow import MicroMomentumFollowStrategy
 from strategies.panic_spread_fade import PanicSpreadFadeStrategy
+from strategies.late_game_shock_fade import LateGameShockFadeStrategy
+
 
 bp = Blueprint("backtests", __name__)
 
@@ -21,6 +23,7 @@ STRATEGY_REGISTRY = {
     "no_score_spike_revert": NoScoreSpikeRevertStrategy,
     "micro_momentum_follow": MicroMomentumFollowStrategy,
     "panic_spread_fade": PanicSpreadFadeStrategy,
+    "late_game_shock_fade": LateGameShockFadeStrategy,
 }
 
 
