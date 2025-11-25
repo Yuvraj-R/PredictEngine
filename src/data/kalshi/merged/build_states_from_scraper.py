@@ -13,7 +13,7 @@ import pandas as pd
 # Paths
 # ---------------------------------------------------------------------------
 
-PROJECT_ROOT = Path(__file__).resolve().parents[5]  # .../PredictEngine
+PROJECT_ROOT = Path(__file__).resolve().parents[4]  # .../PredictEngine
 LIVE_DATA_ROOT = PROJECT_ROOT / "src" / "data" / "kalshi" / "live" / "live_data"
 LIVE_JOBS_DIR = PROJECT_ROOT / "src" / "data" / "kalshi" / "live" / "jobs"
 NBA_GAME_STATES_ROOT = PROJECT_ROOT / "src" / "data" / "nba" / "game_states"
