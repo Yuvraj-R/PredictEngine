@@ -13,6 +13,7 @@ from strategies.no_score_spike_revert import NoScoreSpikeRevertStrategy
 from strategies.micro_momentum_follow import MicroMomentumFollowStrategy
 from strategies.panic_spread_fade import PanicSpreadFadeStrategy
 from strategies.late_game_shock_fade import LateGameShockFadeStrategy
+from strategies.price_shock_momentum import PriceShockMomentumStrategy
 
 
 bp = Blueprint("backtests", __name__)
@@ -24,6 +25,7 @@ STRATEGY_REGISTRY = {
     "micro_momentum_follow": MicroMomentumFollowStrategy,
     "panic_spread_fade": PanicSpreadFadeStrategy,
     "late_game_shock_fade": LateGameShockFadeStrategy,
+    "price_shock_momentum": PriceShockMomentumStrategy,
 }
 
 
