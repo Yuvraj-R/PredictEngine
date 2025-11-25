@@ -14,7 +14,6 @@ state = {
         {
             # Static / identifiers
             "market_id": "NBA.GSW.SAS.ML.HOME",
-            "event_ticker": "NBA.GSW.SAS.2024-01-15",
             "type": "moneyline",
             "team": "GSW",
             "side": "home",
@@ -34,7 +33,6 @@ state = {
             "expiration_time": "2024-01-15T03:35:00Z",
             "status": "active",    # from get_market / get_markets
             "result": None,        # "yes" / "no" / None
-            "is_trading_open": True,  # derived
 
             # Descriptive (optional)
             "market_title": "Will the Warriors win?",
