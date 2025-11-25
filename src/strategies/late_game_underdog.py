@@ -1,3 +1,5 @@
+# src/strategies/late_game_underdog.py
+
 from typing import Any, Dict, List
 from .strategy import Strategy, TradeIntent
 
@@ -6,15 +8,20 @@ class LateGameUnderdogStrategy(Strategy):
     """
     Buy the underdog moneyline late in the game when the score is close
     and the market is pessimistic. Let the position settle at game end.
-
-    Decision is based purely on the effective execution price
-    (ask -> mid -> bid), matching execution.py.
     """
 
     def __init__(self, params: Dict[str, Any] | None = None):
         super().__init__(params)
-        self.max_price: float = self.params.get("max_price", 0.15)
-        self.stake: float = self.params.get("stake", 25.0)
+        p = self.params
+
+        self.max_price: float = float(p.get("max_price", 0.15))
+        self.stake: float = float(p.get("stake", 25.0))
+
+        # NEW: tunable score + time window
+        self.max_score_diff: float = float(p.get("max_score_diff", 6.0))
+        self.min_time_remaining: float = float(p.get("min_time_remaining", 0.5))
+        self.max_time_remaining: float = float(p.get("max_time_remaining", 5.0))
+        self.min_quarter: int = int(p.get("min_quarter", 4))
 
     # -------------------------
     # Internal helpers
@@ -51,8 +58,11 @@ class LateGameUnderdogStrategy(Strategy):
         score_diff: float = state["score_diff"]
         markets = state.get("markets") or []
 
-        # Only trade in Q4 or later (OT) and last 5 minutes of that period
-        if not (quarter >= 4 and 0.5 < time_remaining < 5.0):
+        # Tunable late-game, close-score filter
+        if not (
+            quarter >= self.min_quarter
+            and self.min_time_remaining < time_remaining < self.max_time_remaining
+        ):
             return intents
 
         # moneyline winner markets only, with usable execution price
@@ -81,7 +91,7 @@ class LateGameUnderdogStrategy(Strategy):
         current_risk = pos_info["dollars_at_risk"] if pos_info else 0.0
 
         if (
-            score_diff <= 6
+            score_diff <= self.max_score_diff
             and 0.01 < implied_win_prob < self.max_price
             and current_risk == 0.0  # max 1 open per market
         ):
