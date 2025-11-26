@@ -119,7 +119,7 @@ def _close_position(market_id, price, state, portfolio: PortfolioState, auto=Fal
     if not pos or price is None or price < 0.0:
         return
 
-    close_fee = _calc_fee(pos.contracts, price)
+    close_fee = _calc_fee(pos.contracts, price) if not auto else 0
 
     proceeds = pos.contracts * price
     portfolio.cash += (proceeds - close_fee)
